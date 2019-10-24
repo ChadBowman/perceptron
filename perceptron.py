@@ -10,30 +10,33 @@ def sigmoid_derivative(x):
 
 
 def generate_weights(tup = (3, 1)):
-    """ generates x * y * n weights from -1 to 1 """
     return 2 * np.random.random(tup) - 1
 
 
-def train(inputs, outputs, weights=None, iterations=1000):
+def update_weights(weights, inputs, outputs, targets):
+    error = targets - outputs
+    adjustments = error * sigmoid_derivative(outputs)
+    return weights + np.dot(inputs.T, adjustments)
+
+
+def train(training_set, targets, weights=None, iterations=1000):
     
-    weights = generate_weights((inputs.shape[1], 1))
+    weights = generate_weights((training_set.shape[1], 1))
 
     for interations in range(iterations):
-        fun = lambda x: sigmoid(np.dot(x, weights))
-        out = fun(inputs) 
-        error = outputs - out
-        adjustments = error * sigmoid_derivative(out)
-        weights += np.dot(inputs.T, adjustments)
+        model = lambda x: sigmoid(np.dot(x, weights))
+        result = model(training_set)
+        weights = update_weights(weights, training_set, result, targets)
 
-    return fun 
+    return model 
 
 
 if __name__ == '__main__':
     training_inputs = np.array([
-        [0, 0, 1],
-        [1, 1, 1],
-        [1, 0, 1],
-        [0, 1, 1]
+        [0, 0, 1], # 0
+        [1, 1, 1], # 1
+        [1, 0, 1], # 1
+        [0, 1, 1]  # 0
     ])
 
     training_outputs = np.array([
@@ -42,5 +45,7 @@ if __name__ == '__main__':
 
     perceptron = train(training_inputs, training_outputs)
     
-    x = np.array([1, 0 , 0])
-    print(np.round(perceptron(x)))
+    x = np.array([1, 0, 0])
+    result = perceptron(x)[0]
+
+    print(f'{x} : {np.round(result)}')
