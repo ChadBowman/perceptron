@@ -24,12 +24,6 @@ class Perceptron:
         for sym in activation.free_symbols:
             self.partials[sym] = lambdify(sym, activation.diff(sym))
 
-    def _bias(self, matrix):
-        '''Concatenates a bias value to each row'''
-        shape = 1 if len(matrix.shape) == 1 else (matrix.shape[0], 1)
-        axis = len(matrix.shape) - 1
-        return concatenate((matrix, ones(shape=shape)), axis=axis)
-
     def __call__(self, inputs):
         '''Invokes the perceptron to make a prediction
 
@@ -62,6 +56,12 @@ class Perceptron:
         self.weights += dot(biased_set.T, sum(adjustments))
 
         return error
+
+    def _bias(self, matrix):
+        '''Concatenates a bias value to each row'''
+        shape = 1 if len(matrix.shape) == 1 else (matrix.shape[0], 1)
+        axis = len(matrix.shape) - 1
+        return concatenate((matrix, ones(shape=shape)), axis=axis)
 
     def train(self):
         '''Fully trains perceptron and returns self'''
