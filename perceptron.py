@@ -1,12 +1,12 @@
-from numpy import dot, random, array, mean
+from numpy import dot, random, array, mean, concatenate, ones
 from sympy import lambdify, symbols, E
 
 
 class Perceptron:
-    """A single perceptron with a fixed number of inputs"""
+    '''A single perceptron for making predictions, bitches'''
 
     def __init__(self, *, activation, training_set, targets, tolerance=0.01):
-        """Initializes partial derivaties and randomizes weights
+        '''Initializes partial derivaties
 
         Keyword arguments:
         activation -- the activation function
@@ -14,7 +14,7 @@ class Perceptron:
         targets -- n vector representing solution to training_set
         tolerance -- lowest possible error before terminating training
                      default: 0.01
-        """
+        '''
         self.activation = lambdify(activation.free_symbols, activation)
         self.training_set = training_set
         self.targets = targets
@@ -24,24 +24,30 @@ class Perceptron:
         for sym in activation.free_symbols:
             self.partials[sym] = lambdify(sym, activation.diff(sym))
 
+    def _bias(self, matrix):
+        '''Concatenates a bias value to each row'''
+        shape = 1 if len(matrix.shape) == 1 else (matrix.shape[0], 1)
+        axis = len(matrix.shape) - 1
+        return concatenate((matrix, ones(shape=shape)), axis=axis)
+
     def __call__(self, inputs):
-        """Invokes the perceptron to make a prediction
+        '''Invokes the perceptron to make a prediction
 
         inputs -- n vector of inputs
-        """
-        product = dot(inputs, self.weights)
+        '''
+        product = dot(self._bias(inputs), self.weights)
         return self.activation(product)
 
     def __iter__(self):
-        """Resets weights and returns itself"""
-        n = len(self.training_set[0])
+        '''Resets weights and returns itself'''
+        n = len(self.training_set[0]) + 1  # add 1 for bias
         self.weights = random.random((n, 1)) - 1
         return self
 
     def __next__(self):
-        """Takes a step through the training iteration.
+        '''Takes a step through the training iteration.
         Raises StopIteration when all errors are below tolerance
-        """
+        '''
         guess = self(self.training_set)
         error = self.targets - guess
 
@@ -52,12 +58,13 @@ class Perceptron:
         for partial in self.partials.values():
             adjustments.append(error * partial(guess))
 
-        self.weights += dot(self.training_set.T, sum(adjustments))
+        biased_set = self._bias(self.training_set)
+        self.weights += dot(biased_set.T, sum(adjustments))
 
         return error
 
     def train(self):
-        """Fully trains perceptron and returns self"""
+        '''Fully trains perceptron and returns self'''
         for error in self:
             pass
         return self
@@ -65,10 +72,10 @@ class Perceptron:
 
 if __name__ == '__main__':
     training_inputs = array([
-        [0, 0, 1],  # 0
-        [1, 1, 1],  # 1
-        [1, 0, 1],  # 1
-        [0, 1, 1]   # 0
+        [1, 1, 0],
+        [0, 1, 1],
+        [0, 1, 0],
+        [1, 0, 0]
     ])
 
     training_outputs = array([
@@ -81,9 +88,9 @@ if __name__ == '__main__':
     harbinger = Perceptron(
         activation=sig,
         training_set=training_inputs,
-        targets=training_outputs
+        targets=training_outputs,
     )
 
     harbinger.train()
 
-    print(harbinger(array([1, 0, 0])))
+    print(round(harbinger(array([0, 0, 0]))[0]))
